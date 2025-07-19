@@ -92,10 +92,10 @@ if dataframes:
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[['player_name', 'team_name', 'match_id']]
+        filtered_df[['player_name', 'team_name']]
         .value_counts()
         .reset_index(name='Cantidad')
-        .rename(columns={'player_name': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
+        .rename(columns={'player_name': 'Jugador', 'team_name': 'Equipo')
     )
 else:
     if f7_files and f24_files:
