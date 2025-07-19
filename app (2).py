@@ -45,7 +45,7 @@ if dataframes:
     tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
     partidos = st.sidebar.multiselect("Partido(s)", df['match_id'].unique(), default=df['match_id'].unique())
 
-    jugadores = ['Todos'] + sorted(df['player_name'].dropna().unique())
+    jugadores = ['Todos'] + sorted(df['player_id'].dropna().unique())
     jugador = st.sidebar.selectbox("Jugador", jugadores)
 
     equipos = ['Todos'] + sorted(df['team_name'].dropna().unique())
@@ -63,7 +63,7 @@ if dataframes:
     filtered_df = filtered_df[filtered_df['match_id'].isin(partidos)]
 
     if jugador != 'Todos':
-        filtered_df = filtered_df[filtered_df['player_name'] == jugador]
+        filtered_df = filtered_df[filtered_df['player_id'] == jugador]
     if equipo != 'Todos':
         filtered_df = filtered_df[filtered_df['team_name'] == equipo]
 
@@ -81,10 +81,10 @@ if dataframes:
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[['player_name', 'team_name', 'match_id']]
+        filtered_df[['player_id', 'team_name', 'match_id']]
         .value_counts()
         .reset_index(name='Cantidad')
-        .rename(columns={'player_name': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
+        .rename(columns={'player_id': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
     )
 else:
     if f7_files and f24_files:
