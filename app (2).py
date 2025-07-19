@@ -101,6 +101,77 @@ else:
         st.warning("⚠️ No se pudieron emparejar archivos F7 y F24 correctamente.")
 
 
+    # 🔁 Análisis de secuencias
+    st.markdown("---")
+    if st.checkbox("🔁 Mostrar análisis de secuencias"):
+        st.subheader("📈 Secuencias: Recepción + Pase siguiente")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("📍 Zona de recepción (del pase 1)")
+            rx_min = st.slider("Rec X min", 0, 100, 30, key="rx_min")
+            rx_max = st.slider("Rec X max", 0, 100, 70, key="rx_max")
+            ry_min = st.slider("Rec Y min", 0, 100, 30, key="ry_min")
+            ry_max = st.slider("Rec Y max", 0, 100, 70, key="ry_max")
+        with col2:
+            st.markdown("🎯 Zona del siguiente pase (inicio → fin)")
+            px_min = st.slider("Pase X min", 0, 100, 30, key="px_min")
+            px_max = st.slider("Pase X max", 0, 100, 70, key="px_max")
+            py_min = st.slider("Pase Y min", 0, 100, 30, key="py_min")
+            py_max = st.slider("Pase Y max", 0, 100, 70, key="py_max")
+
+        # Solo eventos tipo pase
+        pases = df[df['event_type'] == 'PASS'].copy()
+
+        # Ordenar por timestamp
+        pases = pases.sort_values(by='timestamp')
+
+        # Paso 1: crear un DataFrame con los pases recibidos
+        pases_recibidos = pases.rename(columns={
+            'receiver_player_id': 'player_id',
+            'end_coordinates_x': 'rec_x',
+            'end_coordinates_y': 'rec_y',
+            'team_name': 'receiver_team',
+            'player_name': 'receiver_name',
+            'timestamp': 'rec_timestamp'
+        })[['player_id', 'rec_x', 'rec_y', 'rec_timestamp', 'receiver_team', 'receiver_name']]
+
+        # Paso 2: merge con el siguiente evento del mismo jugador
+        merged = pd.merge_asof(
+            pases_recibidos.sort_values("rec_timestamp"),
+            pases.sort_values("timestamp"),
+            by="player_id",
+            left_on="rec_timestamp",
+            right_on="timestamp",
+            direction="forward",
+            tolerance=pd.Timedelta("20s")  # por si hay separación mínima de segundos
+        )
+
+        # Filtro de zona de recepción
+        cond_recepcion = (
+            (merged['rec_x'] >= rx_min) & (merged['rec_x'] <= rx_max) &
+            (merged['rec_y'] >= ry_min) & (merged['rec_y'] <= ry_max)
+        )
+
+        # Filtro zona del siguiente pase
+        cond_pase = (
+            (merged['coordinates_x'] >= px_min) & (merged['coordinates_x'] <= px_max) &
+            (merged['coordinates_y'] >= py_min) & (merged['coordinates_y'] <= py_max)
+        )
+
+        secuencias = merged[cond_recepcion & cond_pase]
+
+        # Resultado: tabla con recuento
+        st.success(f"🔎 Se encontraron {len(secuencias)} secuencias que cumplen con las condiciones.")
+        st.dataframe(
+            secuencias.groupby(['receiver_name', 'receiver_team'])
+            .size()
+            .reset_index(name='Cantidad')
+            .rename(columns={'receiver_name': 'Jugador', 'receiver_team': 'Equipo'})
+            .sort_values(by='Cantidad', ascending=False)
+        )
+
+
 
 
 
