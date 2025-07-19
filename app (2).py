@@ -48,7 +48,7 @@ if dataframes:
     jugadores = ['Todos'] + sorted(df['player_id'].dropna().unique())
     jugador = st.sidebar.selectbox("Jugador", jugadores)
 
-    equipos = ['Todos'] + sorted(df['team_name'].dropna().unique())
+    equipos = ['Todos'] + sorted(df['team_id'].dropna().unique())
     equipo = st.sidebar.selectbox("Equipo", equipos)
 
     # Zona del campo
@@ -65,7 +65,7 @@ if dataframes:
     if jugador != 'Todos':
         filtered_df = filtered_df[filtered_df['player_id'] == jugador]
     if equipo != 'Todos':
-        filtered_df = filtered_df[filtered_df['team_name'] == equipo]
+        filtered_df = filtered_df[filtered_df['team_id'] == equipo]
 
     filtered_df = filtered_df[
         (filtered_df['start_x'] >= xmin) & (filtered_df['start_x'] <= xmax) &
@@ -81,10 +81,10 @@ if dataframes:
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[['player_id', 'team_name', 'match_id']]
+        filtered_df[['player_id', 'team_id', 'match_id']]
         .value_counts()
         .reset_index(name='Cantidad')
-        .rename(columns={'player_id': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
+        .rename(columns={'player_id': 'Jugador', 'team_id': 'Equipo', 'match_id': 'Partido'})
     )
 else:
     if f7_files and f24_files:
