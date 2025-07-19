@@ -4,3 +4,4 @@ mplsoccer
 kloppy
 pandas
 matplotlib
+streamlit-drawable-canvas
