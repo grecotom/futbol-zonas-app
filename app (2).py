@@ -20,20 +20,34 @@ if f7_file and f24_file:
         event_types=["pass", "shot"]
     )
 
-    # ✅ Convertir a DataFrame con método nativo
     df = dataset.to_df()
 
     if df.empty:
         st.warning("⚠️ No se pudieron cargar eventos con datos de jugadores o equipos. Verificá que los archivos F7 y F24 correspondan al mismo partido.")
     else:
+        # 📛 Diccionarios de nombres
+        player_id_map = {
+            player.player_id: player.full_name
+            for team in dataset.metadata.teams
+            for player in team.players
+        }
+        team_id_map = {
+            team.team_id: team.name
+            for team in dataset.metadata.teams
+        }
+
+        # 🆕 Agregar columnas con nombres legibles
+        df["player_name"] = df["player_id"].map(player_id_map)
+        df["team_name"] = df["team_id"].map(team_id_map)
+
         # 🎛️ Filtros en barra lateral
         st.sidebar.header("Filtros")
 
         tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
-        jugador = st.sidebar.selectbox("Jugador (player_id)", ['Todos'] + sorted(df['player_id'].dropna().unique()))
-        equipo = st.sidebar.selectbox("Equipo (team_id)", ['Todos'] + sorted(df['team_id'].dropna().unique()))
+        jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player_name'].dropna().unique()))
+        equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team_name'].dropna().unique()))
 
-        # Zona del campo (Opta: 0-100)
+        # Zona del campo
         st.sidebar.markdown("📍 Zona del campo")
         xmin = st.sidebar.slider("X min", 0.0, 100.0, 30.0)
         xmax = st.sidebar.slider("X max", 0.0, 100.0, 70.0)
@@ -43,9 +57,9 @@ if f7_file and f24_file:
         # Aplicar filtros
         filtered_df = df[df['event_type'] == tipo_evento]
         if jugador != 'Todos':
-            filtered_df = filtered_df[filtered_df['player_id'] == jugador]
+            filtered_df = filtered_df[filtered_df['player_name'] == jugador]
         if equipo != 'Todos':
-            filtered_df = filtered_df[filtered_df['team_id'] == equipo]
+            filtered_df = filtered_df[filtered_df['team_name'] == equipo]
 
         filtered_df = filtered_df[
             (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
@@ -70,8 +84,9 @@ if f7_file and f24_file:
 
         # Tabla de resumen
         st.dataframe(
-            filtered_df[['player_id', 'team_id']]
+            filtered_df[['player_name', 'team_name']]
             .value_counts()
             .reset_index(name='Cantidad')
         )
+
 
