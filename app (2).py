@@ -14,14 +14,12 @@ f24_files = st.file_uploader("Subí archivos F24 (eventos)", type="xml", accept_
 dataframes = []
 
 if f7_files and f24_files:
-    # Indexar archivos F24 por nombre base
     f24_dict = {f.name.replace("_f24.xml", ""): f for f in f24_files}
 
     for f7 in f7_files:
         nombre_base = f7.name.replace("_f7.xml", "")
         if nombre_base in f24_dict:
             f24 = f24_dict[nombre_base]
-
             try:
                 dataset = opta.load(
                     f7_data=f7,
@@ -31,13 +29,27 @@ if f7_files and f24_files:
                 )
                 df = dataset.to_df()
                 df["match_id"] = nombre_base
+
+                # 🔄 Mapear player_id → player_name y team_id → team_name
+                player_id_map = {
+                    player.player_id: player.full_name
+                    for team in dataset.metadata.teams
+                    for player in team.players
+                }
+                team_id_map = {
+                    team.team_id: team.name
+                    for team in dataset.metadata.teams
+                }
+
+                df["player_name"] = df["player_id"].map(player_id_map)
+                df["team_name"] = df["team_id"].map(team_id_map)
+
                 dataframes.append(df)
             except Exception as e:
                 st.error(f"❌ Error cargando partido '{nombre_base}': {e}")
         else:
             st.warning(f"⚠️ No se encontró archivo F24 para '{nombre_base}'")
 
-# Procesar si hay datos válidos
 if dataframes:
     df = pd.concat(dataframes, ignore_index=True)
 
@@ -45,9 +57,9 @@ if dataframes:
     st.sidebar.header("Filtros")
     tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
     partidos = st.sidebar.multiselect("Partido(s)", df['match_id'].unique(), default=df['match_id'].unique())
-    jugadores = ['Todos'] + sorted(df['player_id'].dropna().astype(str).unique())
+    jugadores = ['Todos'] + sorted(df['player_name'].dropna().unique())
     jugador = st.sidebar.selectbox("Jugador", jugadores)
-    equipos = ['Todos'] + sorted(df['team_id'].dropna().astype(str).unique())
+    equipos = ['Todos'] + sorted(df['team_name'].dropna().unique())
     equipo = st.sidebar.selectbox("Equipo", equipos)
 
     # Zona del campo
@@ -62,9 +74,9 @@ if dataframes:
     filtered_df = filtered_df[filtered_df['match_id'].isin(partidos)]
 
     if jugador != 'Todos':
-        filtered_df = filtered_df[filtered_df['player_id'].astype(str) == jugador]
+        filtered_df = filtered_df[filtered_df['player_name'] == jugador]
     if equipo != 'Todos':
-        filtered_df = filtered_df[filtered_df['team_id'].astype(str) == equipo]
+        filtered_df = filtered_df[filtered_df['team_name'] == equipo]
 
     filtered_df = filtered_df[
         (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
@@ -80,14 +92,15 @@ if dataframes:
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[['player_id', 'team_id', 'match_id']]
+        filtered_df[['player_name', 'team_name', 'match_id']]
         .value_counts()
         .reset_index(name='Cantidad')
-        .rename(columns={'player_id': 'Jugador', 'team_id': 'Equipo', 'match_id': 'Partido'})
+        .rename(columns={'player_name': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
     )
 else:
     if f7_files and f24_files:
         st.warning("⚠️ No se pudieron emparejar archivos F7 y F24 correctamente.")
+
 
 
 
