@@ -30,9 +30,11 @@ if f7_file and f24_file:
         st.sidebar.header("Filtros")
 
         tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
-        jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player_name'].dropna().unique()))
-        equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team_name'].dropna().unique()))
+        jugador = st.sidebar.selectbox("Jugador (player_id)", ['Todos'] + sorted(df['player_id'].dropna().unique()))
+        equipo = st.sidebar.selectbox("Equipo (team_id)", ['Todos'] + sorted(df['team_id'].dropna().unique()))
 
+        # Minuto desde timestamp
+        df['minute'] = df['timestamp'].dt.total_seconds() // 60
         min_minute, max_minute = int(df['minute'].min()), int(df['minute'].max())
         minutos = st.sidebar.slider("Minutos", min_minute, max_minute, (min_minute, max_minute))
 
@@ -46,14 +48,14 @@ if f7_file and f24_file:
         # Aplicar filtros
         filtered_df = df[df['event_type'] == tipo_evento]
         if jugador != 'Todos':
-            filtered_df = filtered_df[filtered_df['player_name'] == jugador]
+            filtered_df = filtered_df[filtered_df['player_id'] == jugador]
         if equipo != 'Todos':
-            filtered_df = filtered_df[filtered_df['team_name'] == equipo]
+            filtered_df = filtered_df[filtered_df['team_id'] == equipo]
 
         filtered_df = filtered_df[
             (filtered_df['minute'] >= minutos[0]) & (filtered_df['minute'] <= minutos[1]) &
-            (filtered_df['start_x'] >= xmin) & (filtered_df['start_x'] <= xmax) &
-            (filtered_df['start_y'] >= ymin) & (filtered_df['start_y'] <= ymax)
+            (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
+            (filtered_df['coordinates_y'] >= ymin) & (filtered_df['coordinates_y'] <= ymax)
         ]
 
         # Mostrar resultados
@@ -63,8 +65,8 @@ if f7_file and f24_file:
         pitch = Pitch(pitch_type='opta')
         fig, ax = pitch.draw(figsize=(10, 7))
         pitch.scatter(
-            filtered_df['start_x'],
-            filtered_df['start_y'],
+            filtered_df['coordinates_x'],
+            filtered_df['coordinates_y'],
             ax=ax,
             color='red',
             s=100,
@@ -74,9 +76,8 @@ if f7_file and f24_file:
 
         # Tabla de resumen
         st.dataframe(
-            filtered_df[['player_name', 'team_name', 'minute']]
+            filtered_df[['player_id', 'team_id', 'minute']]
             .value_counts()
             .reset_index(name='Cantidad')
         )
-
 
