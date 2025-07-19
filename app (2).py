@@ -25,7 +25,6 @@ if f7_files and f24_files:
                     f7_data=f7,
                     f24_data=f24,
                     coordinates="opta",
-                    event_types=["pass", "shot"]
                 )
                 df = dataset.to_df()
                 df["match_id"] = nombre_base
