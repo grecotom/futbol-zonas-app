@@ -1,0 +1,6 @@
+
+streamlit
+mplsoccer
+kloppy
+pandas
+matplotlib
