@@ -19,16 +19,8 @@ if f7_file and f24_file:
         coordinates="opta",
         event_types=["pass", "shot"]
     )
+    df = dataset.to_df()
 
-    # ✅ Convertir a DataFrame
-    df = pd.DataFrame([{
-        "event_type": e.event_type.value,
-        "team": e.team.name,
-        "player": e.player.name if e.player else None,
-        "x": e.coordinates.x if e.coordinates else None,
-        "y": e.coordinates.y if e.coordinates else None,
-        "minute": int(e.timestamp.total_seconds() // 60) if e.timestamp else None
-    } for e in dataset.events])
 
     # 🎛️ Filtros
     st.sidebar.header("Filtros")
