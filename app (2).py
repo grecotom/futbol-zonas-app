@@ -1,7 +1,7 @@
 import streamlit as st
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
-from kloppy import wyscout
+from kloppy import load_wyscout_event_data
 import pandas as pd
 import io
 import json
@@ -14,7 +14,7 @@ uploaded_file = st.file_uploader("Subí el archivo JSON de eventos Wyscout", typ
 if uploaded_file:
     file_text = uploaded_file.read().decode("utf-8")
     file_io = io.StringIO(file_text)
-    dataset = wyscout.load(file_io)
+    dataset = load_wyscout_event_data(event_data=uploaded_file)
     
     # ... el resto del código igual ...
 
