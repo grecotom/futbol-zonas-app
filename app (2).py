@@ -27,7 +27,7 @@ if f7_file and f24_file:
 
     tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
     jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player_id'].dropna().unique()))
-    equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team'].dropna().unique()))
+    equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team_id'].dropna().unique()))
     min_minute, max_minute = int(df['minute'].min()), int(df['timestamp'].max())
     minutos = st.sidebar.slider("Minutos", min_minute, max_minute, (min_minute, max_minute))
 
@@ -43,7 +43,7 @@ if f7_file and f24_file:
     if jugador != 'Todos':
         filtered_df = filtered_df[filtered_df['player_id'] == jugador]
     if equipo != 'Todos':
-        filtered_df = filtered_df[filtered_df['team'] == equipo]
+        filtered_df = filtered_df[filtered_df['team_id'] == equipo]
 
     filtered_df = filtered_df[
         (filtered_df['timestamp'] >= minutos[0]) & (filtered_df['timestamp'] <= minutos[1]) &
@@ -61,5 +61,5 @@ if f7_file and f24_file:
     st.pyplot(fig)
 
     # Tabla de resultados
-    st.dataframe(filtered_df[['player', 'team', 'minute']].value_counts().reset_index(name='Cantidad'))
+    st.dataframe(filtered_df[['player_id', 'team_id', 'timestamp']].value_counts().reset_index(name='Cantidad'))
 
