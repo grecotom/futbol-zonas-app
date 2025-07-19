@@ -1,18 +1,22 @@
-
 import streamlit as st
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
 from kloppy import wyscout
 import pandas as pd
+import io
+import json
 
 st.set_page_config(layout="wide")
 st.title("⚽ Análisis de Acciones por Zona y Filtros - Wyscout")
 
-# Subida de archivo JSON
 uploaded_file = st.file_uploader("Subí el archivo JSON de eventos Wyscout", type="json")
 
 if uploaded_file:
-    dataset = wyscout.load(uploaded_file)
+    file_text = uploaded_file.read().decode("utf-8")
+    file_io = io.StringIO(file_text)
+    dataset = wyscout.load(file_io)
+    
+    # ... el resto del código igual ...
 
     # Convertir eventos a DataFrame
     df = pd.DataFrame([{
