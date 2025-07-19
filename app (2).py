@@ -33,11 +33,6 @@ if f7_file and f24_file:
         jugador = st.sidebar.selectbox("Jugador (player_id)", ['Todos'] + sorted(df['player_id'].dropna().unique()))
         equipo = st.sidebar.selectbox("Equipo (team_id)", ['Todos'] + sorted(df['team_id'].dropna().unique()))
 
-        # Minuto desde timestamp
-        df['minute'] = df['timestamp'].dt.total_seconds() // 60
-        min_minute, max_minute = int(df['minute'].min()), int(df['minute'].max())
-        minutos = st.sidebar.slider("Minutos", min_minute, max_minute, (min_minute, max_minute))
-
         # Zona del campo (Opta: 0-100)
         st.sidebar.markdown("📍 Zona del campo")
         xmin = st.sidebar.slider("X min", 0.0, 100.0, 30.0)
@@ -53,7 +48,6 @@ if f7_file and f24_file:
             filtered_df = filtered_df[filtered_df['team_id'] == equipo]
 
         filtered_df = filtered_df[
-            (filtered_df['minute'] >= minutos[0]) & (filtered_df['minute'] <= minutos[1]) &
             (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
             (filtered_df['coordinates_y'] >= ymin) & (filtered_df['coordinates_y'] <= ymax)
         ]
@@ -76,7 +70,7 @@ if f7_file and f24_file:
 
         # Tabla de resumen
         st.dataframe(
-            filtered_df[['player_id', 'team_id', 'minute']]
+            filtered_df[['player_id', 'team_id']]
             .value_counts()
             .reset_index(name='Cantidad')
         )
