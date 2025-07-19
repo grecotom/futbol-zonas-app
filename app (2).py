@@ -1,72 +1,82 @@
 import streamlit as st
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
-from kloppy import statsperform
+from kloppy import opta
 import pandas as pd
 
 st.set_page_config(layout="wide")
-st.title("⚽ Análisis de Eventos con StatsPerform (MA1 + MA3)")
+st.title("⚽ Análisis de Eventos Opta (pass + shot)")
 
-# 📂 Subida de archivos MA1 y MA3
-ma1_file = st.file_uploader("Subí archivo MA1 (eventos)", type="json")
-ma3_file = st.file_uploader("Subí archivo MA3 (metadatos)", type="json")
+# 📂 Subida de archivos F7 y F24
+f7_file = st.file_uploader("Subí archivo F7 (alineaciones - opta_f7.xml)", type="xml")
+f24_file = st.file_uploader("Subí archivo F24 (eventos - opta_f24.xml)", type="xml")
 
-if ma1_file and ma3_file:
-    # ✅ Cargar datos de StatsPerform
-    dataset = statsperform.load_event(
-        ma1_data=ma1_file,
-        ma3_data=ma3_file,
+if f7_file and f24_file:
+    # ✅ Cargar dataset desde archivos subidos
+    dataset = opta.load(
+        f7_data=f7_file,
+        f24_data=f24_file,
         coordinates="opta",
-        pitch_length=102.5,
-        pitch_width=69.0,
         event_types=["pass", "shot"]
     )
 
+    # ✅ Convertir a DataFrame con método nativo
     df = dataset.to_df()
 
     if df.empty:
-        st.warning("⚠️ El archivo se cargó, pero no hay eventos disponibles. Verificá que los archivos sean del mismo partido.")
+        st.warning("⚠️ No se pudieron cargar eventos con datos de jugadores o equipos. Verificá que los archivos F7 y F24 correspondan al mismo partido.")
     else:
-        # 🎛️ Filtros
+        # 🎛️ Filtros en barra lateral
         st.sidebar.header("Filtros")
 
         tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
-        jugador_id = st.sidebar.selectbox("Jugador (player_id)", ['Todos'] + sorted(df['player_id'].dropna().unique()))
-        equipo_id = st.sidebar.selectbox("Equipo (team_id)", ['Todos'] + sorted(df['team_id'].dropna().unique()))
-        min_minute = int(df['timestamp'].dt.total_seconds().min() // 60)
-        max_minute = int(df['timestamp'].dt.total_seconds().max() // 60)
+        jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player_name'].dropna().unique()))
+        equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team_name'].dropna().unique()))
+
+        min_minute, max_minute = int(df['minute'].min()), int(df['minute'].max())
         minutos = st.sidebar.slider("Minutos", min_minute, max_minute, (min_minute, max_minute))
 
+        # Zona del campo (Opta: 0-100)
         st.sidebar.markdown("📍 Zona del campo")
-        xmin = st.sidebar.slider("X min", 0.0, 100.0, 0.0)
-        xmax = st.sidebar.slider("X max", 0.0, 100.0, 100.0)
-        ymin = st.sidebar.slider("Y min", 0.0, 100.0, 0.0)
-        ymax = st.sidebar.slider("Y max", 0.0, 100.0, 100.0)
-
-        # Convertimos el tiempo en minutos
-        df['minute'] = df['timestamp'].dt.total_seconds() // 60
+        xmin = st.sidebar.slider("X min", 0.0, 100.0, 30.0)
+        xmax = st.sidebar.slider("X max", 0.0, 100.0, 70.0)
+        ymin = st.sidebar.slider("Y min", 0.0, 100.0, 20.0)
+        ymax = st.sidebar.slider("Y max", 0.0, 100.0, 80.0)
 
         # Aplicar filtros
         filtered_df = df[df['event_type'] == tipo_evento]
-        if jugador_id != 'Todos':
-            filtered_df = filtered_df[filtered_df['player_id'] == jugador_id]
-        if equipo_id != 'Todos':
-            filtered_df = filtered_df[filtered_df['team_id'] == equipo_id]
+        if jugador != 'Todos':
+            filtered_df = filtered_df[filtered_df['player_name'] == jugador]
+        if equipo != 'Todos':
+            filtered_df = filtered_df[filtered_df['team_name'] == equipo]
 
         filtered_df = filtered_df[
             (filtered_df['minute'] >= minutos[0]) & (filtered_df['minute'] <= minutos[1]) &
-            (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
-            (filtered_df['coordinates_y'] >= ymin) & (filtered_df['coordinates_y'] <= ymax)
+            (filtered_df['start_x'] >= xmin) & (filtered_df['start_x'] <= xmax) &
+            (filtered_df['start_y'] >= ymin) & (filtered_df['start_y'] <= ymax)
         ]
 
         # Mostrar resultados
         st.subheader(f"📊 Eventos encontrados: {len(filtered_df)}")
 
+        # Visualización
         pitch = Pitch(pitch_type='opta')
         fig, ax = pitch.draw(figsize=(10, 7))
-        pitch.scatter(filtered_df['coordinates_x'], filtered_df['coordinates_y'], ax=ax, color='blue', s=100, edgecolors='black')
+        pitch.scatter(
+            filtered_df['start_x'],
+            filtered_df['start_y'],
+            ax=ax,
+            color='red',
+            s=100,
+            edgecolors='black'
+        )
         st.pyplot(fig)
 
-        # Mostrar tabla con conteo por jugador
-        st.dataframe(filtered_df[['player_id', 'team_id', 'minute']].value_counts().reset_index(name='Cantidad'))
+        # Tabla de resumen
+        st.dataframe(
+            filtered_df[['player_name', 'team_name', 'minute']]
+            .value_counts()
+            .reset_index(name='Cantidad')
+        )
+
 
