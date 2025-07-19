@@ -26,9 +26,9 @@ if f7_file and f24_file:
     st.sidebar.header("Filtros")
 
     tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
-    jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player'].dropna().unique()))
+    jugador = st.sidebar.selectbox("Jugador", ['Todos'] + sorted(df['player_id'].dropna().unique()))
     equipo = st.sidebar.selectbox("Equipo", ['Todos'] + sorted(df['team'].dropna().unique()))
-    min_minute, max_minute = int(df['minute'].min()), int(df['minute'].max())
+    min_minute, max_minute = int(df['minute'].min()), int(df['timestamp'].max())
     minutos = st.sidebar.slider("Minutos", min_minute, max_minute, (min_minute, max_minute))
 
     # Zona del campo (coordenadas de Opta: 0–100)
@@ -41,12 +41,12 @@ if f7_file and f24_file:
     # Aplicar filtros
     filtered_df = df[df['event_type'] == tipo_evento]
     if jugador != 'Todos':
-        filtered_df = filtered_df[filtered_df['player'] == jugador]
+        filtered_df = filtered_df[filtered_df['player_id'] == jugador]
     if equipo != 'Todos':
         filtered_df = filtered_df[filtered_df['team'] == equipo]
 
     filtered_df = filtered_df[
-        (filtered_df['minute'] >= minutos[0]) & (filtered_df['minute'] <= minutos[1]) &
+        (filtered_df['timestamp'] >= minutos[0]) & (filtered_df['timestamp'] <= minutos[1]) &
         (filtered_df['x'] >= xmin) & (filtered_df['x'] <= xmax) &
         (filtered_df['y'] >= ymin) & (filtered_df['y'] <= ymax)
     ]
