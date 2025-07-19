@@ -17,7 +17,6 @@ if f7_file and f24_file:
         f7_data=f7_file,
         f24_data=f24_file,
         coordinates="opta",
-        event_types=["pass", "shot"]
     )
 
     df = dataset.to_df()
