@@ -14,15 +14,15 @@ f24_files = st.file_uploader("Subí archivos F24 (eventos)", type="xml", accept_
 dataframes = []
 
 if f7_files and f24_files:
-    # Indexar archivos F24 por nombre base
+    # Crear diccionario de archivos F24 indexados por nombre base
     f24_dict = {f.name.replace("_f24.xml", ""): f for f in f24_files}
 
     for f7 in f7_files:
         nombre_base = f7.name.replace("_f7.xml", "")
         if nombre_base in f24_dict:
             f24 = f24_dict[nombre_base]
-
             try:
+                # Carga de evento con mapeo completo
                 dataset = opta.load(
                     f7_data=f7,
                     f24_data=f24,
@@ -33,11 +33,10 @@ if f7_files and f24_files:
                 df["match_id"] = nombre_base
                 dataframes.append(df)
             except Exception as e:
-                st.error(f"❌ Error cargando partido '{nombre_base}': {e}")
+                st.error(f"❌ Error al cargar partido '{nombre_base}': {e}")
         else:
             st.warning(f"⚠️ No se encontró archivo F24 para '{nombre_base}'")
 
-# Procesar si hay datos válidos
 if dataframes:
     df = pd.concat(dataframes, ignore_index=True)
 
@@ -45,9 +44,11 @@ if dataframes:
     st.sidebar.header("Filtros")
     tipo_evento = st.sidebar.selectbox("Tipo de evento", df['event_type'].unique())
     partidos = st.sidebar.multiselect("Partido(s)", df['match_id'].unique(), default=df['match_id'].unique())
-    jugadores = ['Todos'] + sorted(df['player_id'].dropna().astype(str).unique())
+
+    jugadores = ['Todos'] + sorted(df['player_name'].dropna().unique())
     jugador = st.sidebar.selectbox("Jugador", jugadores)
-    equipos = ['Todos'] + sorted(df['team_id'].dropna().astype(str).unique())
+
+    equipos = ['Todos'] + sorted(df['team_name'].dropna().unique())
     equipo = st.sidebar.selectbox("Equipo", equipos)
 
     # Zona del campo
@@ -57,18 +58,18 @@ if dataframes:
     ymin = st.sidebar.slider("Y min", 0, 100, 20)
     ymax = st.sidebar.slider("Y max", 0, 100, 80)
 
-    # Aplicar filtros
+    # Filtros aplicados
     filtered_df = df[df['event_type'] == tipo_evento]
     filtered_df = filtered_df[filtered_df['match_id'].isin(partidos)]
 
     if jugador != 'Todos':
-        filtered_df = filtered_df[filtered_df['player_id'].astype(str) == jugador]
+        filtered_df = filtered_df[filtered_df['player_name'] == jugador]
     if equipo != 'Todos':
-        filtered_df = filtered_df[filtered_df['team_id'].astype(str) == equipo]
+        filtered_df = filtered_df[filtered_df['team_name'] == equipo]
 
     filtered_df = filtered_df[
-        (filtered_df['coordinates_x'] >= xmin) & (filtered_df['coordinates_x'] <= xmax) &
-        (filtered_df['coordinates_y'] >= ymin) & (filtered_df['coordinates_y'] <= ymax)
+        (filtered_df['start_x'] >= xmin) & (filtered_df['start_x'] <= xmax) &
+        (filtered_df['start_y'] >= ymin) & (filtered_df['start_y'] <= ymax)
     ]
 
     # Mostrar resultados
@@ -76,18 +77,19 @@ if dataframes:
 
     pitch = Pitch(pitch_type='opta')
     fig, ax = pitch.draw(figsize=(10, 7))
-    pitch.scatter(filtered_df['coordinates_x'], filtered_df['coordinates_y'], ax=ax, color='red', s=100, edgecolors='black')
+    pitch.scatter(filtered_df['start_x'], filtered_df['start_y'], ax=ax, color='red', s=100, edgecolors='black')
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[['player_id', 'team_id', 'match_id']]
+        filtered_df[['player_name', 'team_name', 'match_id']]
         .value_counts()
         .reset_index(name='Cantidad')
-        .rename(columns={'player_id': 'Jugador', 'team_id': 'Equipo', 'match_id': 'Partido'})
+        .rename(columns={'player_name': 'Jugador', 'team_name': 'Equipo', 'match_id': 'Partido'})
     )
 else:
     if f7_files and f24_files:
         st.warning("⚠️ No se pudieron emparejar archivos F7 y F24 correctamente.")
+
 
 
 
